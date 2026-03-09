@@ -1,0 +1,46 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return firestore.get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isTechnician() {
+      return isSignedIn()
+        && userDoc().exists()
+        && userDoc().data.role == "technician";
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && userDoc().exists()
+        && userDoc().data.role == "admin";
+    }
+
+    function isStaff() {
+      return isTechnician() || isAdmin();
+    }
+
+    function ticketDoc(ticketId) {
+      return firestore.get(/databases/$(database)/documents/tickets/$(ticketId));
+    }
+
+    function isOwner(ticketId) {
+      return isSignedIn()
+        && ticketDoc(ticketId).exists()
+        && ticketDoc(ticketId).data.userId == request.auth.uid;
+    }
+
+    match /tickets/{ticketId}/{fileName} {
+      allow read: if isOwner(ticketId) || isStaff();
+      allow create: if (isOwner(ticketId) || isStaff())
+        && request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|video/.*|application/.*|text/.*');
+      allow delete: if isOwner(ticketId) || isStaff();
+    }
+  }
+}

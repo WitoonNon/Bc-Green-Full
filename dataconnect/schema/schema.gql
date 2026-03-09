@@ -1,0 +1,13 @@
+type User @table {
+  username: String!
+  email: String
+  createdAt: Timestamp!
+}
+
+type Note @table {
+  title: String!
+  content: String!
+  createdAt: Timestamp!
+  updatedAt: Timestamp
+  author: User
+}
