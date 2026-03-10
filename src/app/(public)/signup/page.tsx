@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, type Firestore } from "firebase/firestore";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/components/i18n-provider";
@@ -24,6 +25,8 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [message, setMessage] = useState<AuthMessage | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -121,20 +124,38 @@ export default function SignupPage() {
               onChange={(event) => setEmail(event.target.value)}
               className="h-10 rounded-xl"
             />
-            <Input
-              type="password"
-              value={password}
-              placeholder={t("auth.password")}
-              onChange={(event) => setPassword(event.target.value)}
-              className="h-10 rounded-xl"
-            />
-            <Input
-              type="password"
-              value={confirm}
-              placeholder={t("auth.confirmPassword")}
-              onChange={(event) => setConfirm(event.target.value)}
-              className="h-10 rounded-xl"
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                placeholder={t("auth.password")}
+                onChange={(event) => setPassword(event.target.value)}
+                className="h-10 rounded-xl pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-700/50 hover:text-emerald-700"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <div className="relative">
+              <Input
+                type={showConfirm ? "text" : "password"}
+                value={confirm}
+                placeholder={t("auth.confirmPassword")}
+                onChange={(event) => setConfirm(event.target.value)}
+                className="h-10 rounded-xl pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-700/50 hover:text-emerald-700"
+              >
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
           {message ? (
             <div

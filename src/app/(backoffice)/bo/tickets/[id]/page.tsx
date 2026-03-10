@@ -17,7 +17,7 @@ import {
   updateTicketStatus,
 } from "@/services/tickets";
 import type { TranslationKey } from "@/lib/i18n";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { getVehicleById } from "@/data/vehicles";
 import type { Ticket, TicketStatus } from "@/types/ticket";
 import type { VehicleItem } from "@/types/vehicle";
@@ -146,7 +146,22 @@ export default function BackofficeTicketDetailPage() {
 
   const categoryLabel =
     ticket.category === "repair" ? t("nav.repair") : ticket.category;
-  const repairDate = ticket.repairDate ?? ticket.createdAt;
+  // Fix: Improved logic to match repairDate with createdAt time if they are on the same local day
+  const repairDate = (() => {
+    if (!ticket.repairDate) return ticket.createdAt;
+
+    const hasTime = ticket.repairDate.includes("T") || ticket.repairDate.includes(":");
+    if (hasTime) return ticket.repairDate;
+
+    // Convert both to local date strings (YYYY-MM-DD) to compare if it's the same day
+    const repairDay = new Date(ticket.repairDate).toLocaleDateString("en-CA");
+    const createdDay = new Date(ticket.createdAt).toLocaleDateString("en-CA");
+
+    if (repairDay === createdDay) {
+      return ticket.createdAt;
+    }
+    return ticket.repairDate;
+  })();
 
   const isLocked = ticket.status === "DONE" || ticket.status === "CANCELLED";
 

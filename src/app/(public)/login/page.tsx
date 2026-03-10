@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ function LoginPageInner() {
   const nextPath = useMemo(() => searchParams.get("next") ?? "/home", [searchParams]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [message, setMessage] = useState<AuthMessage | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -106,13 +108,22 @@ function LoginPageInner() {
               className="h-10 rounded-xl"
               autoFocus
             />
-            <Input
-              type="password"
-              value={password}
-              placeholder={t("auth.password")}
-              onChange={(event) => setPassword(event.target.value)}
-              className="h-10 rounded-xl"
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                placeholder={t("auth.password")}
+                onChange={(event) => setPassword(event.target.value)}
+                className="h-10 rounded-xl pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-700/50 hover:text-emerald-700"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             <div className="flex items-center justify-between text-[11px] text-emerald-800/70">
               <label className="flex items-center gap-2">
                 <input

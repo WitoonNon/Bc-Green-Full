@@ -141,19 +141,28 @@ export async function createTicket(
       };
     }
 
-    const now = new Date().toISOString();
+    const now = new Date();
+    const nowISO = now.toISOString();
+    const todayStr = nowISO.split("T")[0]; // YYYY-MM-DD
     const readableNo = generateReadableNo();
+
+    let repairDate = input.repairDate;
+    // If repairDate is today's date (YYYY-MM-DD), use the full timestamp so it matches the creation time exactly
+    if (repairDate === todayStr) {
+      repairDate = nowISO;
+    }
 
     const docRef = await addDoc(collection(firestore, TICKET_COLLECTION), {
       ...input,
+      repairDate,
       readableNo,
       userId: user.uid,
       status: "NEW",
       assignedTo: null,
       attachments: [],
-      timeline: [{ status: "NEW", at: now, by: user.uid }],
-      createdAt: now,
-      updatedAt: now,
+      timeline: [{ status: "NEW", at: nowISO, by: user.uid }],
+      createdAt: nowISO,
+      updatedAt: nowISO,
     });
 
     const attachments = await uploadAttachments(files, onProgress);
