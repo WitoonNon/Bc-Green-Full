@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/components/i18n-provider";
-import { subscribeTickets } from "@/services/tickets";
+import { deleteTicket, subscribeTickets } from "@/services/tickets";
 import { db, isFirebaseConfigured } from "@/lib/firebase/client";
+import { showErrorAlert } from "@/lib/alerts";
 import { formatDateTime } from "@/lib/format";
 import type { Ticket } from "@/types/ticket";
 import type { TranslationKey } from "@/lib/i18n";
@@ -28,6 +29,15 @@ export default function TicketQueue({ items: initialItems }: TicketQueueProps) {
   const [items, setItems] = useState<Ticket[]>(initialItems ?? []);
   const [error, setError] = useState("");
   const [userMap, setUserMap] = useState<Record<string, UserMini>>({});
+
+  const handleDelete = async (ticketId: string) => {
+    if (window.confirm(t("actions.deleteTicketConfirm"))) {
+      const res = await deleteTicket(ticketId);
+      if (!res.ok) {
+        await showErrorAlert({ title: "Error", text: res.error || "Delete failed" });
+      }
+    }
+  };
 
   const ticketCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -175,6 +185,14 @@ export default function TicketQueue({ items: initialItems }: TicketQueueProps) {
                   </Button>
                 </Link>
               )}
+              <Button
+                size="sm"
+                variant="danger"
+                className="bg-rose-600 text-white hover:bg-rose-700 ml-auto"
+                onClick={() => handleDelete(ticket.id)}
+              >
+                {t("actions.delete")}
+              </Button>
             </div>
           </Card>
         );

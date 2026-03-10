@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { doc, onSnapshot, type Firestore } from "firebase/firestore";
 import PageHeader from "@/components/sections/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusStepper } from "@/components/ui/status-stepper";
 import { useI18n } from "@/components/i18n-provider";
 import { db, isFirebaseConfigured } from "@/lib/firebase/client";
-import { subscribeTicketById } from "@/services/tickets";
+import { subscribeTicketById, deleteTicket } from "@/services/tickets";
+import { showErrorAlert } from "@/lib/alerts";
 import type { TranslationKey } from "@/lib/i18n";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getVehicleById } from "@/data/vehicles";
@@ -28,6 +30,7 @@ const statusRank: Record<TicketStatus, number> = {
 export default function TicketDetailPage() {
   const { t, lang } = useI18n();
   const params = useParams();
+  const router = useRouter();
   const ticketId = String(params?.id ?? "");
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [error, setError] = useState<string>("");
@@ -83,6 +86,17 @@ export default function TicketDetailPage() {
     return () => unsubscribe();
   }, [ticket?.vehicleId]);
 
+  const handleDelete = async () => {
+    if (window.confirm(t("actions.deleteTicketConfirm"))) {
+      const res = await deleteTicket(ticketId);
+      if (res.ok) {
+        router.push("/tickets");
+      } else {
+        await showErrorAlert({ title: "Error", text: res.error || "Delete failed" });
+      }
+    }
+  };
+
   if (error) {
     return <p className="text-sm text-rose-600">{error}</p>;
   }
@@ -130,12 +144,22 @@ export default function TicketDetailPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title={ticket.title}
-        subtitle={`${categoryLabel} - ${ticket.readableNo}`}
-        backHref="/tickets"
-        logoSrc="/logo_bc.png"
-      />
+      <div className="relative">
+        <PageHeader
+          title={ticket.title}
+          subtitle={`${categoryLabel} - ${ticket.readableNo}`}
+          backHref="/tickets"
+          logoSrc="/logo_bc.png"
+        />
+        <Button
+          variant="danger"
+          size="sm"
+          className="absolute right-4 top-1/2 -translate-y-1/2 bg-rose-600 text-white hover:bg-rose-700"
+          onClick={handleDelete}
+        >
+          {t("actions.delete")}
+        </Button>
+      </div>
       <Card className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

@@ -63,36 +63,36 @@ service cloud.firestore {
 
     match /tickets/{ticketId} {
       allow create, read, update: if isSignedIn();
-      allow delete: if false;
+      allow delete: if isOwner(resource) || isStaff();
     }
 
     match /notifications/{notificationId} {
       allow create, read, update: if isSignedIn();
-      allow delete: if false;
+      allow delete: if isStaff();
     }
 
     match /faqs/{faqId} {
       allow read: if true;
       allow create, update: if isSignedIn();
-      allow delete: if false;
+      allow delete: if isStaff();
     }
 
     match /manuals/{manualId} {
       allow read: if true;
       allow create, update: if isSignedIn();
-      allow delete: if false;
+      allow delete: if isStaff();
     }
 
     match /promotions/{promoId} {
       allow read: if true;
       allow create, update: if isSignedIn();
-      allow delete: if false;
+      allow delete: if isStaff();
     }
 
     match /announcements/{announceId} {
       allow read: if true;
       allow create, update: if isSignedIn();
-      allow delete: if false;
+      allow delete: if isStaff();
     }
 
     match /vehicles/{vehicleId} {

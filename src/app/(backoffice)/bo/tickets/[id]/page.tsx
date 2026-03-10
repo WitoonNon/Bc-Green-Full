@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { doc, getDoc, onSnapshot, type Firestore } from "firebase/firestore";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import PageHeader from "@/components/sections/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,9 @@ import { db, isFirebaseConfigured } from "@/lib/firebase/client";
 import {
   subscribeTicketById,
   updateTicketStatus,
+  deleteTicket,
 } from "@/services/tickets";
+import { showErrorAlert } from "@/lib/alerts";
 import type { TranslationKey } from "@/lib/i18n";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getVehicleById } from "@/data/vehicles";
@@ -39,6 +42,7 @@ const statusOptions: TicketStatus[] = [
 export default function BackofficeTicketDetailPage() {
   const { t, lang } = useI18n();
   const params = useParams();
+  const router = useRouter();
   const ticketId = String(params?.id ?? "");
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [note, setNote] = useState("");
@@ -171,13 +175,34 @@ export default function BackofficeTicketDetailPage() {
     setNote("");
   };
 
+  const handleDelete = async () => {
+    if (window.confirm(t("actions.deleteTicketConfirm"))) {
+      const res = await deleteTicket(ticketId);
+      if (res.ok) {
+        router.push("/bo/tickets");
+      } else {
+        await showErrorAlert({ title: "Error", text: res.error || "Delete failed" });
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <PageHeader
-        title={ticket.title}
-        subtitle={`${categoryLabel} - ${ticket.readableNo}`}
-        backHref="/bo/tickets"
-      />
+      <div className="relative">
+        <PageHeader
+          title={ticket.title}
+          subtitle={`${categoryLabel} - ${ticket.readableNo}`}
+          backHref="/bo/tickets"
+        />
+        <Button
+          variant="danger"
+          size="sm"
+          className="absolute right-4 top-1/2 -translate-y-1/2 bg-rose-600 text-white hover:bg-rose-700"
+          onClick={handleDelete}
+        >
+          {t("actions.delete")}
+        </Button>
+      </div>
       <Card className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
