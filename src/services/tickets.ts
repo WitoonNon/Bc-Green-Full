@@ -435,6 +435,51 @@ export async function updateTicketStatus(
   return { ok: true };
 }
 
+export async function deleteTicket(ticketId: string) {
+  if (!ensureFirebase()) {
+    const user = auth?.currentUser;
+    const uid = user?.uid || "mock-user";
+    const key = `bc_mock_tickets_${uid}`;
+    const items = JSON.parse(localStorage.getItem(key) || "[]") as Ticket[];
+    const filtered = items.filter((item) => item.id !== ticketId);
+    localStorage.setItem(key, JSON.stringify(filtered));
+    return { ok: true };
+  }
+
+  const user = ensureUser();
+  if (!user) {
+    return { ok: false, error: "Authentication is required." };
+  }
+
+  try {
+    const firestore = db as Firestore;
+    const docRef = doc(firestore, TICKET_COLLECTION, ticketId);
+    const snap = await getDoc(docRef);
+    
+    if (!snap.exists()) {
+      return { ok: false, error: "Ticket not found." };
+    }
+
+    const data = snap.data();
+    if (data.userId !== user.uid) {
+      // Check if staff
+      const profileSnap = await getDoc(doc(firestore, "users", user.uid));
+      const profile = profileSnap.data() as any;
+      if (profile?.role !== "admin" && profile?.role !== "technician") {
+        return { ok: false, error: "No permission to delete this ticket." };
+      }
+    }
+
+    // In a real app we might want to delete attachments too, but for now we delete the doc
+    const { deleteDoc } = await import("firebase/firestore");
+    await deleteDoc(docRef);
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to delete ticket.";
+    return { ok: false, error: message };
+  }
+}
+
 export async function assignTicketToSelf(ticketId: string) {
   const user = ensureUser();
   if (!user) {

@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { StatusStepper } from "@/components/ui/status-stepper";
 import { useI18n } from "@/components/i18n-provider";
+import { deleteTicket } from "@/services/tickets";
+import { showErrorAlert } from "@/lib/alerts";
 import type { TranslationKey } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/format";
 import type { Ticket, TicketStatus } from "@/types/ticket";
@@ -32,10 +34,29 @@ export default function TicketStatusCard({ ticket }: TicketStatusCardProps) {
     { key: "DONE", label: t("status.DONE") },
   ];
 
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (window.confirm(t("actions.deleteTicketConfirm"))) {
+      const res = await deleteTicket(ticket.id);
+      if (!res.ok) {
+        await showErrorAlert({ title: "Error", text: res.error || "Delete failed" });
+      }
+    }
+  };
+
   return (
     <Link href={`/tickets/${ticket.id}`} className="block">
-      <Card className="space-y-4 transition hover:-translate-y-1">
-        <div className="flex items-start justify-between gap-3">
+      <Card className="relative space-y-4 transition hover:-translate-y-1">
+        <button
+          onClick={handleDelete}
+          className="absolute right-4 top-4 px-2 py-1 text-[10px] uppercase font-bold text-white bg-rose-500 rounded-lg hover:bg-rose-600 transition-colors z-10"
+          title={t("actions.delete")}
+        >
+          {t("actions.delete")}
+        </button>
+        <div className="flex items-start justify-between gap-3 pr-8">
           <div>
             <h3 className="text-base font-semibold text-[--text-strong]">
               {ticket.title}

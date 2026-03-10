@@ -18,7 +18,7 @@ export function buildProfileFromUser(
     displayName: String(data?.displayName ?? user.displayName ?? user.email ?? ""),
     email: String(data?.email ?? user.email ?? ""),
     phone: String(data?.phone ?? ""),
-    avatarUrl: data?.avatarUrl ? String(data.avatarUrl) : undefined,
+    avatarUrl: data?.avatarUrl ? String(data.avatarUrl) : "",
     address: {
       line1: String(address.line1 ?? ""),
       district: String(address.district ?? ""),

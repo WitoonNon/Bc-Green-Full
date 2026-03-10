@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot, setDoc, updateDoc, type Firestore } from "firebase/firestore";
 import PageHeader from "@/components/sections/page-header";
@@ -26,6 +26,7 @@ export default function ProfileEditPage() {
   const [hydrated, setHydrated] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setError("");
@@ -110,7 +111,7 @@ export default function ProfileEditPage() {
     try {
       const firestore = db as Firestore;
       const ref = doc(firestore, "users", user.uid);
-      let avatarUrl = form.avatarUrl;
+      let avatarUrl = form.avatarUrl || "";
       if (avatarFile) {
         const upload = await uploadLocalFile(avatarFile, "avatars");
         avatarUrl = upload.url;
@@ -186,27 +187,57 @@ export default function ProfileEditPage() {
           <div className="text-xs font-semibold text-[--text-mid]">
             {lang === "th" ? "รูปโปรไฟล์" : "Profile photo"}
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="h-20 w-20 overflow-hidden rounded-full border border-emerald-100 bg-white">
-              {avatarPreview ? (
-                <img
-                  src={avatarPreview}
-                  alt={form.displayName}
-                  className="h-full w-full object-cover"
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Avatar with overlay buttons */}
+            <div className="relative h-20 w-20 group">
+              <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-emerald-200 bg-white">
+                {avatarPreview ? (
+                  <img
+                    src={avatarPreview}
+                    alt={form.displayName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-emerald-200 bg-emerald-50">
+                    {form.displayName?.charAt(0).toUpperCase() || "?"}
+                  </div>
+                )}
+              </div>
+              {/* Edit button */}
+              <label
+                className="absolute bottom-0 right-0 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-emerald-600 text-white shadow-md hover:bg-emerald-700 transition-colors"
+                title={lang === "th" ? "เปลี่ยนรูป" : "Change photo"}
+              >
+                <span className="text-xs leading-none">✏️</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) =>
+                    setAvatarFile(event.target.files?.[0] ?? null)
+                  }
                 />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-[--text-soft]">
-                  {lang === "th" ? "ไม่มีรูป" : "No photo"}
-                </div>
+              </label>
+              {/* Remove button */}
+              {avatarPreview && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAvatarFile(null);
+                    setForm((prev) => prev ? { ...prev, avatarUrl: "" } : prev);
+                  }}
+                  className="absolute top-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-white shadow-md hover:bg-rose-600 transition-colors text-xs font-bold"
+                  title={lang === "th" ? "ลบรูป" : "Remove photo"}
+                >
+                  ✕
+                </button>
               )}
             </div>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(event) =>
-                setAvatarFile(event.target.files?.[0] ?? null)
-              }
-            />
+            <div className="text-xs text-[--text-soft]">
+              {avatarPreview
+                ? (lang === "th" ? "กด ✏️ เพื่อเปลี่ยนรูป หรือ ✕ เพื่อลบ" : "Press ✏️ to change or ✕ to remove")
+                : (lang === "th" ? "กด ✏️ เพื่อเพิ่มรูปโปรไฟล์" : "Press ✏️ to add a profile photo")}
+            </div>
           </div>
         </div>
         <div className="space-y-4 pt-4 border-t border-emerald-100">

@@ -435,23 +435,61 @@ export default function TicketForm() {
           ) : null}
           {imagePreviews.length ? (
             <div className="grid gap-2 sm:grid-cols-2">
-              {imagePreviews.map((item) => (
-                <div
-                  key={`${item.file.name}-${item.file.size}-${item.file.lastModified}`}
-                  className="overflow-hidden rounded-xl border border-emerald-100 bg-white"
-                >
-                  <img
-                    src={item.url}
-                    alt={item.file.name}
-                    className="h-32 w-full object-cover"
-                  />
-                  <div className="px-2 py-1 text-[10px] text-[--text-soft]">
-                    {item.file.name}
+              {imagePreviews.map((item, idx) => {
+                const fileIndex = files.indexOf(item.file);
+                return (
+                  <div
+                    key={`${item.file.name}-${item.file.size}-${item.file.lastModified}`}
+                    className="relative overflow-hidden rounded-xl border border-emerald-100 bg-white group"
+                  >
+                    <img
+                      src={item.url}
+                      alt={item.file.name}
+                      className="h-32 w-full object-cover"
+                    />
+                    {/* Overlay buttons */}
+                    <div className="absolute top-1.5 right-1.5 flex gap-1">
+                      {/* Replace/edit button */}
+                      <label
+                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-emerald-600 text-white shadow-md hover:bg-emerald-700 transition-colors"
+                        title={lang === "th" ? "เปลี่ยนรูป" : "Replace"}
+                      >
+                        <span className="text-xs leading-none">✏️</span>
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const newFile = e.target.files?.[0];
+                            if (newFile && fileIndex >= 0) {
+                              setFiles((prev) => {
+                                const next = [...prev];
+                                next[fileIndex] = newFile;
+                                return next;
+                              });
+                            }
+                          }}
+                        />
+                      </label>
+                      {/* Delete button */}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(fileIndex)}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-white shadow-md hover:bg-rose-600 transition-colors text-xs font-bold"
+                        title={lang === "th" ? "ลบรูป" : "Remove"}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="px-2 py-1 text-[10px] text-[--text-soft] truncate">
+                      {item.file.name}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : null}
+
           {progress > 0 ? (
             <div className="space-y-1">
               <div className="text-xs text-[--text-soft]">

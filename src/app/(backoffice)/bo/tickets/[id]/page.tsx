@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { doc, onSnapshot, type Firestore } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, type Firestore } from "firebase/firestore";
+import Link from "next/link";
 import PageHeader from "@/components/sections/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,12 @@ import { formatDateTime } from "@/lib/format";
 import { getVehicleById } from "@/data/vehicles";
 import type { Ticket, TicketStatus } from "@/types/ticket";
 import type { VehicleItem } from "@/types/vehicle";
+
+type UserMini = {
+  displayName: string;
+  email: string;
+  phone?: string;
+};
 
 const statusOptions: TicketStatus[] = [
   "NEW",
@@ -40,6 +47,8 @@ export default function BackofficeTicketDetailPage() {
   const [loaded, setLoaded] = useState(false);
   const [vehicle, setVehicle] = useState<VehicleItem | null>(null);
   const [vehicleLoaded, setVehicleLoaded] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState<UserMini | null>(null);
+
 
   useEffect(() => {
     if (!ticketId) {
@@ -91,6 +100,29 @@ export default function BackofficeTicketDetailPage() {
     );
     return () => unsubscribe();
   }, [ticket?.vehicleId]);
+
+  // Fetch customer info
+  useEffect(() => {
+    if (!ticket?.userId || !db || !isFirebaseConfigured) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const firestore = db as Firestore;
+        const snap = await getDoc(doc(firestore, "users", ticket.userId));
+        if (!cancelled && snap.exists()) {
+          const data = snap.data() as Record<string, any>;
+          setCustomerInfo({
+            displayName: data.displayName || data.email || ticket.userId,
+            email: data.email || "",
+            phone: data.phone || "",
+          });
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [ticket?.userId]);
 
   if (error) {
     return <p className="text-sm text-rose-600">{error}</p>;
@@ -179,6 +211,47 @@ export default function BackofficeTicketDetailPage() {
             {lang === "th" ? "ยังไม่มีข้อมูลรุ่นรถ" : "Vehicle info not found."}
           </div>
         ) : null}
+        {/* Customer info card */}
+        <Card className="space-y-2 border-blue-100 bg-blue-50/50">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-blue-700">
+              {lang === "th" ? "ข้อมูลลูกค้าผู้แจ้ง" : "Customer Info"}
+            </div>
+            <Link href={`/bo/users/${ticket.userId}`}>
+              <Button size="sm" variant="outline">
+                {lang === "th" ? "ดูโปรไฟล์" : "View Profile"}
+              </Button>
+            </Link>
+          </div>
+          {customerInfo ? (
+            <div className="space-y-1 text-xs">
+              <div>
+                <span className="font-medium text-[--text-mid]">{lang === "th" ? "ชื่อ: " : "Name: "}</span>
+                <span className="font-semibold text-[--text-strong]">{customerInfo.displayName}</span>
+              </div>
+              {customerInfo.email && (
+                <div>
+                  <span className="font-medium text-[--text-mid]">Email: </span>
+                  <a href={`mailto:${customerInfo.email}`} className="text-blue-700 hover:underline">
+                    {customerInfo.email}
+                  </a>
+                </div>
+              )}
+              {customerInfo.phone && (
+                <div>
+                  <span className="font-medium text-[--text-mid]">{lang === "th" ? "โทร: " : "Phone: "}</span>
+                  <a href={`tel:${customerInfo.phone}`} className="text-blue-700 hover:underline">
+                    {customerInfo.phone}
+                  </a>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-xs text-[--text-soft]">
+              {lang === "th" ? "กำลังโหลดข้อมูลลูกค้า..." : "Loading customer info..."}
+            </div>
+          )}
+        </Card>
         <Card className="space-y-2 border-emerald-100 bg-white">
           <div className="text-sm font-semibold text-emerald-700">
             {lang === "th" ? "ข้อมูลงานซ่อม" : "Repair details"}
