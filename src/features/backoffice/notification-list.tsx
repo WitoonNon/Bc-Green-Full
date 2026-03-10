@@ -11,6 +11,7 @@ import {
   subscribeNotificationsForRole,
   markNotificationRead,
 } from "@/services/notifications";
+import { formatDateTime } from "@/lib/format";
 import type { AppNotification } from "@/types/notification";
 
 export default function NotificationList() {
@@ -76,7 +77,7 @@ export default function NotificationList() {
             </Badge>
           </div>
           <div className="flex items-center justify-between text-xs text-[--text-soft]">
-            <span>{item.createdAt}</span>
+            <span>{formatDateTime(item.createdAt)}</span>
             {!item.read ? (
               <button
                 type="button"

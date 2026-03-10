@@ -5,65 +5,45 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    // Helper to get user data safely
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Check if user has a specific role
+    function hasRole(role) {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role == role;
     }
 
     function isTechnician() {
-      return isSignedIn()
-        && userDoc().exists()
-        && userDoc().data.role == "technician";
+      return hasRole("technician");
     }
 
     function isAdmin() {
-      return isSignedIn()
-        && userDoc().exists()
-        && userDoc().data.role == "admin";
+      return hasRole("admin");
     }
 
     function isStaff() {
       return isTechnician() || isAdmin();
     }
 
-    function isOwner(resource) {
-      return isSignedIn() && resource.data.userId == request.auth.uid;
-    }
-
-    function changedKeysOnly(keys) {
-      return request.resource.data.diff(resource.data).changedKeys().hasOnly(keys);
-    }
-
-    function seedOpen() {
-      return !exists(/databases/$(database)/documents/system/bootstrap);
-    }
-
-    function isSeedDoc() {
-      return request.resource.data.seed == true;
-    }
-
-    function hasCompleteAddress() {
-      return isSignedIn()
-        && userDoc().exists()
-        && userDoc().data.address is map
-        && userDoc().data.address.line1 is string
-        && userDoc().data.address.district is string
-        && userDoc().data.address.province is string
-        && userDoc().data.address.zip is string
-        && userDoc().data.address.line1.size() > 0
-        && userDoc().data.address.district.size() > 0
-        && userDoc().data.address.province.size() > 0
-        && userDoc().data.address.zip.size() > 0;
+    function isOwner(ticketId) {
+      return isSignedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role != 'guest' &&
+             resource.data.userId == request.auth.uid;
     }
 
     match /system/{docId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow update, delete: if isAdmin();
     }
 
     match /tickets/{ticketId} {
       allow create, read, update: if isSignedIn();
-      allow delete: if isOwner(resource) || isStaff();
+      allow delete: if isStaff() || (isSignedIn() && resource.data.userId == request.auth.uid);
     }
 
     match /notifications/{notificationId} {
@@ -73,26 +53,22 @@ service cloud.firestore {
 
     match /faqs/{faqId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isStaff();
+      allow create, update, delete: if isStaff();
     }
 
     match /manuals/{manualId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isStaff();
+      allow create, update, delete: if isStaff();
     }
 
     match /promotions/{promoId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isStaff();
+      allow create, update, delete: if isStaff();
     }
 
     match /announcements/{announceId} {
       allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isStaff();
+      allow create, update, delete: if isStaff();
     }
 
     match /vehicles/{vehicleId} {
@@ -101,8 +77,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow create, read, update: if isSignedIn();
-      allow delete: if false;
+      allow read: if isSignedIn();
+      allow create, update: if request.auth.uid == userId || isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }
