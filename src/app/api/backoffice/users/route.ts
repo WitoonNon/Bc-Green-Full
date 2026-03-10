@@ -30,15 +30,23 @@ function validateRole(role?: string) {
 }
 
 export async function GET() {
-  // return all users; authorization already handled elsewhere in middleware
   try {
     const users = await backend.fetchUsers();
-    return NextResponse.json({ users });
+    return NextResponse.json({
+      users,
+      _debug: {
+        isAdminConfigured,
+        hasProjectId: !!process.env.FIREBASE_ADMIN_PROJECT_ID,
+        hasClientEmail: !!process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+        hasPrivateKey: !!process.env.FIREBASE_ADMIN_PRIVATE_KEY
+      }
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "unable to list users";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
 
 export async function POST(request: Request) {
   if (!(await hasSession())) {
